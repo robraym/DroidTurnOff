@@ -3,6 +3,7 @@ package com.droid.ray.droidturnoff;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
@@ -30,6 +31,17 @@ public class DroidCommon {
     public static void turnOffScreen(final Context context) {
         // turn off screen
         try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                if (DroidAccessibilityService.lockScreen()) {
+                    return;
+                }
+                Intent intent = new Intent(context, DroidConfigurationActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.putExtra(DroidConfigurationActivity.EXTRA_REQUEST_ACCESSIBILITY, true);
+                context.startActivity(intent);
+                return;
+            }
+
             if (!DroidShowDeviceAdmin.EnabledAdminAndLock(context)) {
                 Intent intent = new Intent(context, DroidConfigurationActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -60,7 +72,11 @@ public class DroidCommon {
         }
         try {
             if (start) {
-                context.startService(intentService);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intentService);
+                } else {
+                    context.startService(intentService);
+                }
                 Log.d(TAG, "startService");
             }
         } catch (Exception ex) {

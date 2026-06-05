@@ -1,15 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.droid.ray.droidturnoff">
-
-    <uses-sdk
-        android:minSdkVersion="8"
-        android:targetSdkVersion="19" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.USES_POLICY_FORCE_LOCK" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
     <uses-permission android:name="com.android.launcher.permission.UNINSTALL_SHORTCUT" />
 
@@ -17,9 +15,10 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/DefaultTheme">
+        android:theme="@style/AppTheme">
         <activity
             android:name=".DroidConfigurationActivity"
+            android:exported="true"
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -27,11 +26,33 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".DroidHeadService" />
+        <service
+            android:name=".DroidHeadService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="@string/foreground_service_type" />
+        </service>
+
+        <service
+            android:name=".DroidAccessibilityService"
+            android:exported="true"
+            android:label="@string/accessibility_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service" />
+        </service>
 
         <receiver
             android:name=".DroidScreenOffAdminReceiver"
             android:description="@string/device_admin_description"
+            android:exported="true"
             android:label="@string/app_name"
             android:permission="android.permission.BIND_DEVICE_ADMIN">
             <meta-data
@@ -45,13 +66,15 @@
         <receiver
             android:name=".DroidRestartService"
             android:enabled="true"
-            android:exported="true"
+            android:exported="false"
             android:label="RestartServiceWhenStopped">
             <intent-filter>
                 <action android:name="com.droid.ray.droidturnoff.ACTION_RESTART_SERVICE" />
             </intent-filter>
         </receiver>
-        <receiver android:name=".DroidRestartApp">
+        <receiver
+            android:name=".DroidRestartApp"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
@@ -62,6 +85,7 @@
 
         <activity
             android:name=".DroidTurnOffActivity"
+            android:exported="true"
             android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>
                 <action android:name="android.app.action.TURN_OFF" />

@@ -1,11 +1,9 @@
 package com.droid.ray.droidturnoff;
 
-import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
+import android.app.Activity;
 import android.os.Bundle;
-import android.util.Log;
 
-public class DroidTurnOffActivity extends AppCompatActivity {
+public class DroidTurnOffActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

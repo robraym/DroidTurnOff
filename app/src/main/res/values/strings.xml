@@ -6,10 +6,28 @@
         <string name="admin_receiver_status_disabled">Turn Off foi removido da lista de administradores de dispositivos</string>
         <string name="ok">Sim</string>
         <string name="cancel">Não</string>
-        <string name="messageAdmin">Este aplicativo usa a permissão de administrador de dispositivos, para poder desligar a tela do seu smartphone. Deseja abrir a tela de configuração ?</string>
-        <string name="title_activity_main">MainActivity</string>
-        <string name="txt_tela_Config">Tela de Configuração</string>
-        <string name="spf_usar_botao_flutuante">Ativar um botão flutuante ao invés do icone tradicional do android para desligar a tela</string>
+        <string name="messageAdmin">Este aplicativo usa a permissão de administrador de dispositivos para apagar e bloquear a tela do smartphone. Deseja abrir a configuração agora?</string>
+        <string name="title_activity_main">Turn Off</string>
+        <string name="configuracoes_titulo">Configurações</string>
+        <string name="configuracoes_subtitulo">Escolha como o atalho para apagar a tela deve aparecer.</string>
+        <string name="txt_tela_Config">Acesso rápido</string>
+        <string name="spf_usar_botao_flutuante">Mostrar um botão flutuante sobre os outros apps. Ao desativar, o app tenta criar o atalho tradicional na tela inicial.</string>
         <string name="txt_titulo">Botão flutuante</string>
+        <string name="floating_button_enabled">Ativo</string>
+        <string name="floating_button_disabled">Desativado</string>
+        <string name="shortcut_request_sent">Pedido de atalho enviado para a tela inicial.</string>
+        <string name="overlay_permission_title">Permitir botão flutuante</string>
+        <string name="overlay_permission_message">Para exibir o botão sobre outros apps, permita que o Turn Off apareça sobre a tela.</string>
+        <string name="open_settings">Abrir configurações</string>
+        <string name="foreground_service_title">Botão flutuante ativo</string>
+        <string name="foreground_service_text">Toque no botão para apagar e bloquear a tela.</string>
+        <string name="foreground_service_channel">Botão flutuante</string>
+        <string name="foreground_service_type">Botão flutuante para bloquear a tela com um toque.</string>
+        <string name="accessibility_service_label">Turn Off - Bloquear tela</string>
+        <string name="accessibility_service_description">Permite que o Turn Off bloqueie a tela mantendo o desbloqueio por digital disponível.</string>
+        <string name="accessibility_permission_title">Ativar bloqueio por acessibilidade</string>
+        <string name="accessibility_permission_message">Para manter a digital disponível depois de apagar a tela, ative o serviço Turn Off - Bloquear tela em Acessibilidade.</string>
+        <string name="accessibility_enabled">Acessibilidade ativa</string>
+        <string name="accessibility_disabled">Acessibilidade necessária para manter a digital</string>
 
 </resources>

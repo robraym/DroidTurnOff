@@ -19,7 +19,7 @@ public class DroidShowDeviceAdmin {
         intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN,
                 mDeviceAdminSample);
         intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                "You need to activate Device Administrator to perform phonelost tasks!");
+                context.getString(R.string.device_admin_description));
         context.startActivity(intent);
     }
 
