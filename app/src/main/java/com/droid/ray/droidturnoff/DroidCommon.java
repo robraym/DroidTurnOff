@@ -21,7 +21,7 @@ public class DroidCommon {
         boolean spf = false;
         try {
             SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
-            spf = sp.getBoolean("spf_botaoFlutuante", true);
+            spf = sp.getBoolean("spf_botaoFlutuante", false);
         } catch (Exception ex) {
             Log.d(TAG, "AtivarBotaoFlutuante - " + ex.getMessage());
         }
@@ -37,7 +37,6 @@ public class DroidCommon {
                 }
                 Intent intent = new Intent(context, DroidConfigurationActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                intent.putExtra(DroidConfigurationActivity.EXTRA_REQUEST_ACCESSIBILITY, true);
                 context.startActivity(intent);
                 return;
             }

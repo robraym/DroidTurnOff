@@ -37,9 +37,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class DroidConfigurationActivity extends Activity {
-    public static final String EXTRA_REQUEST_ACCESSIBILITY = "com.droid.ray.droidturnoff.REQUEST_ACCESSIBILITY";
-
     private static final String PREF_FLOATING_BUTTON = "spf_botaoFlutuante";
+    private static final String PREF_LEGACY_SHORTCUT_REQUESTED = "legacy_shortcut_requested";
+    private static final String PREF_PENDING_OVERLAY_REQUEST = "pending_overlay_request";
+    private static final String SHORTCUT_ID_TURN_OFF = "turn_off_screen";
     private static final int REQUEST_POST_NOTIFICATIONS = 1201;
 
     private static final int COLOR_BACKGROUND = Color.rgb(0, 0, 0);
@@ -58,6 +59,7 @@ public class DroidConfigurationActivity extends Activity {
     private Switch floatingSwitch;
     private TextView floatingSummary;
     private TextView accessibilitySummary;
+    private boolean accessibilityGateVisible;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,14 +68,8 @@ public class DroidConfigurationActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         buildSettingsScreen();
-        requestNotificationPermissionIfNeeded();
 
-        if (shouldUseAccessibilityLock()) {
-            if (getIntent().getBooleanExtra(EXTRA_REQUEST_ACCESSIBILITY, false)
-                    || !DroidAccessibilityService.isEnabled(this)) {
-                showAccessibilityPermissionDialog();
-            }
-        } else if (!DroidShowDeviceAdmin.EnabledAdmin(this)) {
+        if (!shouldUseAccessibilityLock() && !DroidShowDeviceAdmin.EnabledAdmin(this)) {
             showDeviceAdminDialog();
         }
 
@@ -83,6 +79,18 @@ public class DroidConfigurationActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        boolean shouldShowAccessibilityGate = shouldShowAccessibilityGate();
+        if (accessibilityGateVisible != shouldShowAccessibilityGate) {
+            buildSettingsScreen();
+        }
+
+        if (shouldShowAccessibilityGate) {
+            DroidCommon.stopStartService(context, false);
+            refreshAccessibilitySummary();
+            return;
+        }
+
+        handlePendingOverlayRequest();
         refreshFloatingSummary();
         refreshAccessibilitySummary();
 
@@ -100,6 +108,11 @@ public class DroidConfigurationActivity extends Activity {
     }
 
     private void buildSettingsScreen() {
+        floatingSwitch = null;
+        floatingSummary = null;
+        accessibilitySummary = null;
+        accessibilityGateVisible = shouldShowAccessibilityGate();
+
         ScrollView scrollView = new ScrollView(this);
         scrollView.setFillViewport(true);
         scrollView.setBackgroundColor(COLOR_BACKGROUND);
@@ -135,6 +148,15 @@ public class DroidConfigurationActivity extends Activity {
         TextView section = createSection(getString(R.string.txt_tela_Config));
         content.addView(section);
 
+        if (shouldUseAccessibilityLock()) {
+            content.addView(createAccessibilityGroup());
+            if (accessibilityGateVisible) {
+                setContentView(scrollView);
+                refreshAccessibilitySummary();
+                return;
+            }
+        }
+
         LinearLayout group = createGroup();
         floatingSwitch = createSwitch();
         floatingSwitch.setChecked(DroidCommon.AtivarBotaoFlutuante(context));
@@ -155,27 +177,27 @@ public class DroidConfigurationActivity extends Activity {
         group.addView(row);
         content.addView(group);
 
-        if (shouldUseAccessibilityLock()) {
-            LinearLayout lockGroup = createGroup();
-            View accessibilityRow = createNavigationRow(
-                    getString(R.string.accessibility_permission_title),
-                    "",
-                    R.drawable.ic_oneui_floating_button,
-                    COLOR_ICON_ACCESSIBILITY,
-                    new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            openAccessibilitySettings();
-                        }
-                    });
-            accessibilitySummary = (TextView) accessibilityRow.findViewWithTag("summary");
-            lockGroup.addView(accessibilityRow);
-            content.addView(lockGroup);
-        }
-
         setContentView(scrollView);
         refreshFloatingSummary();
         refreshAccessibilitySummary();
+    }
+
+    private LinearLayout createAccessibilityGroup() {
+        LinearLayout lockGroup = createGroup();
+        View accessibilityRow = createNavigationRow(
+                getString(R.string.accessibility_permission_title),
+                "",
+                R.drawable.ic_oneui_floating_button,
+                COLOR_ICON_ACCESSIBILITY,
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        openAccessibilitySettings();
+                    }
+                });
+        accessibilitySummary = (TextView) accessibilityRow.findViewWithTag("summary");
+        lockGroup.addView(accessibilityRow);
+        return lockGroup;
     }
 
     private void requestNotificationPermissionIfNeeded() {
@@ -189,22 +211,72 @@ public class DroidConfigurationActivity extends Activity {
     }
 
     private void applyFloatingButtonPreference(boolean enabled) {
-        preferences.edit().putBoolean(PREF_FLOATING_BUTTON, enabled).apply();
-
         if (enabled) {
-            createRemoveShortcut(true);
             if (canDrawOverlays()) {
+                preferences.edit()
+                        .putBoolean(PREF_FLOATING_BUTTON, true)
+                        .putBoolean(PREF_PENDING_OVERLAY_REQUEST, false)
+                        .apply();
+                createRemoveShortcut(true);
+                requestNotificationPermissionIfNeeded();
                 DroidCommon.stopStartService(context, true);
             } else {
+                preferences.edit()
+                        .putBoolean(PREF_FLOATING_BUTTON, false)
+                        .putBoolean(PREF_PENDING_OVERLAY_REQUEST, true)
+                        .apply();
+                setFloatingSwitchChecked(false);
                 DroidCommon.stopStartService(context, false);
-                showOverlayPermissionDialog();
+                openOverlaySettings();
+                refreshFloatingSummary();
+                return;
             }
         } else {
+            preferences.edit()
+                    .putBoolean(PREF_FLOATING_BUTTON, false)
+                    .putBoolean(PREF_PENDING_OVERLAY_REQUEST, false)
+                    .apply();
             DroidCommon.stopStartService(context, false);
             createRemoveShortcut(false);
         }
 
         refreshFloatingSummary();
+    }
+
+    private void handlePendingOverlayRequest() {
+        if (!preferences.getBoolean(PREF_PENDING_OVERLAY_REQUEST, false)) {
+            return;
+        }
+
+        boolean granted = canDrawOverlays();
+        preferences.edit()
+                .putBoolean(PREF_FLOATING_BUTTON, granted)
+                .putBoolean(PREF_PENDING_OVERLAY_REQUEST, false)
+                .apply();
+        setFloatingSwitchChecked(granted);
+
+        if (granted) {
+            createRemoveShortcut(true);
+            requestNotificationPermissionIfNeeded();
+            DroidCommon.stopStartService(context, true);
+        } else {
+            DroidCommon.stopStartService(context, false);
+        }
+    }
+
+    private void setFloatingSwitchChecked(boolean checked) {
+        if (floatingSwitch == null) {
+            return;
+        }
+
+        floatingSwitch.setOnCheckedChangeListener(null);
+        floatingSwitch.setChecked(checked);
+        floatingSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                applyFloatingButtonPreference(isChecked);
+            }
+        });
     }
 
     private void createRemoveShortcut(boolean remove) {
@@ -214,7 +286,11 @@ public class DroidConfigurationActivity extends Activity {
         if (!remove && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             ShortcutManager shortcutManager = getSystemService(ShortcutManager.class);
             if (shortcutManager != null && shortcutManager.isRequestPinShortcutSupported()) {
-                ShortcutInfo shortcut = new ShortcutInfo.Builder(this, "turn_off_screen")
+                if (isPinnedShortcutCreated(shortcutManager)) {
+                    return;
+                }
+
+                ShortcutInfo shortcut = new ShortcutInfo.Builder(this, SHORTCUT_ID_TURN_OFF)
                         .setShortLabel("Desligar")
                         .setLongLabel("Desligar a tela")
                         .setIcon(Icon.createWithResource(this, R.mipmap.button))
@@ -226,6 +302,10 @@ public class DroidConfigurationActivity extends Activity {
             }
         }
 
+        if (!remove && preferences.getBoolean(PREF_LEGACY_SHORTCUT_REQUESTED, false)) {
+            return;
+        }
+
         Intent intent = new Intent();
         intent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent);
         intent.putExtra(Intent.EXTRA_SHORTCUT_NAME, "Desligar");
@@ -235,14 +315,45 @@ public class DroidConfigurationActivity extends Activity {
                 ? "com.android.launcher.action.UNINSTALL_SHORTCUT"
                 : "com.android.launcher.action.INSTALL_SHORTCUT");
         getApplicationContext().sendBroadcast(intent);
+
+        if (!remove) {
+            preferences.edit().putBoolean(PREF_LEGACY_SHORTCUT_REQUESTED, true).apply();
+        }
+    }
+
+    private boolean isPinnedShortcutCreated(ShortcutManager shortcutManager) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return false;
+        }
+
+        for (ShortcutInfo shortcut : shortcutManager.getPinnedShortcuts()) {
+            if (SHORTCUT_ID_TURN_OFF.equals(shortcut.getId())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean canDrawOverlays() {
         return Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this);
     }
 
+    private void openOverlaySettings() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return;
+        }
+
+        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:" + getPackageName()));
+        startActivity(intent);
+    }
+
     private boolean shouldUseAccessibilityLock() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.P;
+    }
+
+    private boolean shouldShowAccessibilityGate() {
+        return shouldUseAccessibilityLock() && !DroidAccessibilityService.isEnabled(this);
     }
 
     private void showDeviceAdmin() {
@@ -311,42 +422,7 @@ public class DroidConfigurationActivity extends Activity {
             @Override
             public void onClick(View v) {
                 dialog.dismiss();
-                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:" + getPackageName()));
-                startActivity(intent);
-            }
-        });
-        actions.addView(settings);
-
-        container.addView(actions);
-        showStyledDialog(dialog, container);
-    }
-
-    private void showAccessibilityPermissionDialog() {
-        final Dialog dialog = new Dialog(this);
-        LinearLayout container = createDialogContainer();
-        container.addView(createDialogTitle(getString(R.string.accessibility_permission_title)));
-
-        TextView message = createDialogMessage(getString(R.string.accessibility_permission_message));
-        message.setPadding(0, dp(8), 0, dp(18));
-        container.addView(message);
-
-        LinearLayout actions = createDialogActions();
-        TextView cancel = createDialogButton(getString(R.string.cancel));
-        cancel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                dialog.dismiss();
-            }
-        });
-        actions.addView(cancel);
-
-        TextView settings = createDialogButton(getString(R.string.open_settings));
-        settings.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                dialog.dismiss();
-                openAccessibilitySettings();
+                openOverlaySettings();
             }
         });
         actions.addView(settings);

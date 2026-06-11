@@ -4,7 +4,7 @@
         android:key="telaConfig"
         android:title="@string/txt_tela_Config">
         <SwitchPreference
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:key="spf_botaoFlutuante"
             android:summary="@string/spf_usar_botao_flutuante"
             android:title="@string/txt_titulo"></SwitchPreference>
