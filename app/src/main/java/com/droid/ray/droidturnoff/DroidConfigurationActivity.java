@@ -192,7 +192,7 @@ public class DroidConfigurationActivity extends Activity {
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        openAccessibilitySettings();
+                        showAccessibilityDisclosureDialog();
                     }
                 });
         accessibilitySummary = (TextView) accessibilityRow.findViewWithTag("summary");
@@ -426,6 +426,39 @@ public class DroidConfigurationActivity extends Activity {
             }
         });
         actions.addView(settings);
+
+        container.addView(actions);
+        showStyledDialog(dialog, container);
+    }
+
+    private void showAccessibilityDisclosureDialog() {
+        final Dialog dialog = new Dialog(this);
+        LinearLayout container = createDialogContainer();
+        container.addView(createDialogTitle(getString(R.string.accessibility_disclosure_title)));
+
+        TextView message = createDialogMessage(getString(R.string.accessibility_disclosure_message));
+        message.setPadding(0, dp(8), 0, dp(18));
+        container.addView(message);
+
+        LinearLayout actions = createDialogActions();
+        TextView decline = createDialogButton(getString(R.string.accessibility_disclosure_decline));
+        decline.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+            }
+        });
+        actions.addView(decline);
+
+        TextView accept = createDialogButton(getString(R.string.accessibility_disclosure_accept));
+        accept.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+                openAccessibilitySettings();
+            }
+        });
+        actions.addView(accept);
 
         container.addView(actions);
         showStyledDialog(dialog, container);

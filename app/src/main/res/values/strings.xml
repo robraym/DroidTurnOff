@@ -24,10 +24,15 @@
         <string name="foreground_service_channel">Botão flutuante</string>
         <string name="foreground_service_type">Botão flutuante para bloquear a tela com um toque.</string>
         <string name="accessibility_service_label">Turn Off - Bloquear tela</string>
+        <string name="accessibility_service_summary">Bloqueia a tela quando você toca no botão do Turn Off.</string>
         <string name="accessibility_service_description">Permite que o Turn Off bloqueie a tela mantendo o desbloqueio por digital disponível.</string>
         <string name="accessibility_permission_title">Ativar bloqueio por acessibilidade</string>
         <string name="accessibility_permission_message">Para manter a digital disponível depois de apagar a tela, ative o serviço Turn Off - Bloquear tela em Acessibilidade.</string>
         <string name="accessibility_enabled">Acessibilidade ativa</string>
         <string name="accessibility_disabled">Acessibilidade necessária para manter a digital</string>
+        <string name="accessibility_disclosure_title">Uso da Acessibilidade</string>
+        <string name="accessibility_disclosure_message">O Turn Off usa o serviço de Acessibilidade apenas para bloquear a tela quando você toca no botão do app ou no botão flutuante. Isso mantém o desbloqueio por digital disponível. O app não lê sua tela, não monitora toques, não coleta senhas e não armazena nem compartilha dados pessoais.</string>
+        <string name="accessibility_disclosure_decline">Agora não</string>
+        <string name="accessibility_disclosure_accept">Aceito e abrir configurações</string>
 
 </resources>
