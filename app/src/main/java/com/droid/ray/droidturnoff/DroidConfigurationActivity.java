@@ -53,12 +53,15 @@ public class DroidConfigurationActivity extends Activity {
     private static final int COLOR_DIALOG = Color.rgb(31, 32, 36);
     private static final int COLOR_ICON_FLOATING = Color.rgb(66, 133, 244);
     private static final int COLOR_ICON_ACCESSIBILITY = Color.rgb(28, 177, 116);
+    private static final int COLOR_ICON_SHORTCUT = Color.rgb(126, 99, 245);
 
     private Context context;
     private SharedPreferences preferences;
     private Switch floatingSwitch;
     private TextView floatingSummary;
     private TextView accessibilitySummary;
+    private TextView shortcutSummary;
+    private TextView shortcutAction;
     private boolean accessibilityGateVisible;
 
     @Override
@@ -93,6 +96,7 @@ public class DroidConfigurationActivity extends Activity {
         handlePendingOverlayRequest();
         refreshFloatingSummary();
         refreshAccessibilitySummary();
+        refreshShortcutState();
 
         if (DroidCommon.AtivarBotaoFlutuante(context) && canDrawOverlays()) {
             DroidCommon.stopStartService(context, true);
@@ -111,6 +115,8 @@ public class DroidConfigurationActivity extends Activity {
         floatingSwitch = null;
         floatingSummary = null;
         accessibilitySummary = null;
+        shortcutSummary = null;
+        shortcutAction = null;
         accessibilityGateVisible = shouldShowAccessibilityGate();
 
         ScrollView scrollView = new ScrollView(this);
@@ -157,6 +163,8 @@ public class DroidConfigurationActivity extends Activity {
             }
         }
 
+        content.addView(createShortcutGroup());
+
         LinearLayout group = createGroup();
         floatingSwitch = createSwitch();
         floatingSwitch.setChecked(DroidCommon.AtivarBotaoFlutuante(context));
@@ -180,6 +188,7 @@ public class DroidConfigurationActivity extends Activity {
         setContentView(scrollView);
         refreshFloatingSummary();
         refreshAccessibilitySummary();
+        refreshShortcutState();
     }
 
     private LinearLayout createAccessibilityGroup() {
@@ -200,6 +209,29 @@ public class DroidConfigurationActivity extends Activity {
         return lockGroup;
     }
 
+    private LinearLayout createShortcutGroup() {
+        LinearLayout shortcutGroup = createGroup();
+        View shortcutRow = createActionRow(
+                getString(R.string.shortcut_title),
+                "",
+                R.drawable.ic_oneui_floating_button,
+                COLOR_ICON_SHORTCUT,
+                getString(R.string.shortcut_action_add),
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (!isShortcutCreated()) {
+                            createRemoveShortcut(false);
+                            refreshShortcutState();
+                        }
+                    }
+                });
+        shortcutSummary = (TextView) shortcutRow.findViewWithTag("summary");
+        shortcutAction = (TextView) shortcutRow.findViewWithTag("action");
+        shortcutGroup.addView(shortcutRow);
+        return shortcutGroup;
+    }
+
     private void requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT < 33) {
             return;
@@ -217,7 +249,6 @@ public class DroidConfigurationActivity extends Activity {
                         .putBoolean(PREF_FLOATING_BUTTON, true)
                         .putBoolean(PREF_PENDING_OVERLAY_REQUEST, false)
                         .apply();
-                createRemoveShortcut(true);
                 requestNotificationPermissionIfNeeded();
                 DroidCommon.stopStartService(context, true);
             } else {
@@ -237,7 +268,6 @@ public class DroidConfigurationActivity extends Activity {
                     .putBoolean(PREF_PENDING_OVERLAY_REQUEST, false)
                     .apply();
             DroidCommon.stopStartService(context, false);
-            createRemoveShortcut(false);
         }
 
         refreshFloatingSummary();
@@ -256,7 +286,6 @@ public class DroidConfigurationActivity extends Activity {
         setFloatingSwitchChecked(granted);
 
         if (granted) {
-            createRemoveShortcut(true);
             requestNotificationPermissionIfNeeded();
             DroidCommon.stopStartService(context, true);
         } else {
@@ -332,6 +361,14 @@ public class DroidConfigurationActivity extends Activity {
             }
         }
         return false;
+    }
+
+    private boolean isShortcutCreated() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            ShortcutManager shortcutManager = getSystemService(ShortcutManager.class);
+            return shortcutManager != null && isPinnedShortcutCreated(shortcutManager);
+        }
+        return preferences.getBoolean(PREF_LEGACY_SHORTCUT_REQUESTED, false);
     }
 
     private boolean canDrawOverlays() {
@@ -479,6 +516,23 @@ public class DroidConfigurationActivity extends Activity {
         floatingSummary.setText(state + " - " + getString(R.string.spf_usar_botao_flutuante));
     }
 
+    private void refreshShortcutState() {
+        if (shortcutSummary == null || shortcutAction == null) {
+            return;
+        }
+
+        boolean created = isShortcutCreated();
+        shortcutSummary.setText(created
+                ? getString(R.string.shortcut_summary_added)
+                : getString(R.string.shortcut_summary));
+        shortcutAction.setText(created
+                ? getString(R.string.shortcut_action_added)
+                : getString(R.string.shortcut_action_add));
+        shortcutAction.setTextColor(created ? COLOR_SECONDARY_TEXT : Color.WHITE);
+        int backgroundColor = created ? COLOR_GROUP_PRESSED : COLOR_BLUE;
+        shortcutAction.setBackground(createRoundedBackground(backgroundColor, 18));
+    }
+
     private void refreshAccessibilitySummary() {
         if (accessibilitySummary == null) {
             return;
@@ -545,6 +599,38 @@ public class DroidConfigurationActivity extends Activity {
 
         row.setOnClickListener(listener);
         return row;
+    }
+
+    private View createActionRow(String title, String summary, int iconResId, int iconColor, String actionText,
+                                 View.OnClickListener listener) {
+        LinearLayout row = createBaseRow();
+        addRowIcon(row, iconResId, iconColor);
+
+        LinearLayout texts = createTextsWithValue(title, summary);
+        row.addView(texts, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+
+        TextView actionButton = createInlineActionButton(actionText);
+        actionButton.setTag("action");
+        actionButton.setOnClickListener(listener);
+        row.addView(actionButton, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        row.setOnClickListener(listener);
+        return row;
+    }
+
+    private TextView createInlineActionButton(String text) {
+        TextView button = new TextView(this);
+        button.setText(text);
+        button.setTextColor(Color.WHITE);
+        button.setGravity(Gravity.CENTER);
+        button.setTypeface(Typeface.DEFAULT_BOLD);
+        button.setAllCaps(false);
+        setTextSize(button, 14);
+        button.setPadding(dp(14), dp(8), dp(14), dp(8));
+        button.setBackground(createRoundedBackground(COLOR_BLUE, 18));
+        return button;
     }
 
     private LinearLayout createBaseRow() {
