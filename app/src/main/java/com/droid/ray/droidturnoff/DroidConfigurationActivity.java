@@ -41,6 +41,7 @@ public class DroidConfigurationActivity extends Activity {
     private static final String PREF_LEGACY_SHORTCUT_REQUESTED = "legacy_shortcut_requested";
     private static final String PREF_PENDING_OVERLAY_REQUEST = "pending_overlay_request";
     private static final String SHORTCUT_ID_TURN_OFF = "turn_off_screen";
+    private static final String PREF_SHORTCUT_GRAY_GREEN = "shortcut_gray_green_v2_updated";
     private static final int REQUEST_POST_NOTIFICATIONS = 1201;
 
     private static final int COLOR_BACKGROUND = Color.rgb(0, 0, 0);
@@ -82,6 +83,7 @@ public class DroidConfigurationActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        updatePinnedShortcut();
         boolean shouldShowAccessibilityGate = shouldShowAccessibilityGate();
         if (accessibilityGateVisible != shouldShowAccessibilityGate) {
             buildSettingsScreen();
@@ -319,12 +321,7 @@ public class DroidConfigurationActivity extends Activity {
                     return;
                 }
 
-                ShortcutInfo shortcut = new ShortcutInfo.Builder(this, SHORTCUT_ID_TURN_OFF)
-                        .setShortLabel("Desligar")
-                        .setLongLabel("Desligar a tela")
-                        .setIcon(Icon.createWithResource(this, R.mipmap.button))
-                        .setIntent(shortcutIntent)
-                        .build();
+                ShortcutInfo shortcut = buildScreenShortcut(shortcutIntent);
                 shortcutManager.requestPinShortcut(shortcut, null);
                 Toast.makeText(this, R.string.shortcut_request_sent, Toast.LENGTH_SHORT).show();
                 return;
@@ -337,9 +334,9 @@ public class DroidConfigurationActivity extends Activity {
 
         Intent intent = new Intent();
         intent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent);
-        intent.putExtra(Intent.EXTRA_SHORTCUT_NAME, "Desligar");
+        intent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getString(R.string.shortcut_label));
         intent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
-                Intent.ShortcutIconResource.fromContext(getApplicationContext(), R.mipmap.button));
+                Intent.ShortcutIconResource.fromContext(getApplicationContext(), R.drawable.ic_shortcut_screen));
         intent.setAction(remove
                 ? "com.android.launcher.action.UNINSTALL_SHORTCUT"
                 : "com.android.launcher.action.INSTALL_SHORTCUT");
@@ -347,6 +344,37 @@ public class DroidConfigurationActivity extends Activity {
 
         if (!remove) {
             preferences.edit().putBoolean(PREF_LEGACY_SHORTCUT_REQUESTED, true).apply();
+        }
+    }
+
+    private ShortcutInfo buildScreenShortcut(Intent intent) {
+        return new ShortcutInfo.Builder(this, SHORTCUT_ID_TURN_OFF)
+                .setShortLabel(getString(R.string.shortcut_label))
+                .setLongLabel(getString(R.string.shortcut_label))
+                .setIcon(Icon.createWithResource(this, R.drawable.ic_shortcut_screen))
+                .setIntent(intent)
+                .build();
+    }
+
+    private void updatePinnedShortcut() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return;
+        }
+        ShortcutManager manager = getSystemService(ShortcutManager.class);
+        if (manager == null) {
+            return;
+        }
+        for (ShortcutInfo shortcut : manager.getPinnedShortcuts()) {
+            if (SHORTCUT_ID_TURN_OFF.equals(shortcut.getId())
+                    && (!preferences.getBoolean(PREF_SHORTCUT_GRAY_GREEN, false)
+                    || !TextUtils.equals(shortcut.getShortLabel(), getString(R.string.shortcut_label)))) {
+                Intent intent = new Intent(this, DroidTurnOffActivity.class);
+                intent.setAction(Intent.ACTION_MAIN);
+                if (manager.updateShortcuts(java.util.Collections.singletonList(buildScreenShortcut(intent)))) {
+                    preferences.edit().putBoolean(PREF_SHORTCUT_GRAY_GREEN, true).apply();
+                }
+                return;
+            }
         }
     }
 

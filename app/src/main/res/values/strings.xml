@@ -13,6 +13,7 @@
         <string name="txt_tela_Config">Acesso rápido</string>
         <string name="spf_usar_botao_flutuante">Opcional. Mostra um botão sobre outros apps para bloquear a tela rapidamente.</string>
         <string name="txt_titulo">Botão flutuante</string>
+        <string name="shortcut_label">Apagar tela</string>
         <string name="shortcut_title">Ícone na tela inicial</string>
         <string name="shortcut_summary">Adicione um atalho para bloquear a tela com um toque.</string>
         <string name="shortcut_summary_added">Ícone já adicionado à tela inicial.</string>
