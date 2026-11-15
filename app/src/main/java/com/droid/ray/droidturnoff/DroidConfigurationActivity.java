@@ -41,7 +41,7 @@ public class DroidConfigurationActivity extends Activity {
     private static final String PREF_LEGACY_SHORTCUT_REQUESTED = "legacy_shortcut_requested";
     private static final String PREF_PENDING_OVERLAY_REQUEST = "pending_overlay_request";
     private static final String SHORTCUT_ID_TURN_OFF = "turn_off_screen";
-    private static final String PREF_SHORTCUT_GRAY_GREEN = "shortcut_gray_green_v2_updated";
+    private static final String PREF_SHORTCUT_GRAY_GREEN = "shortcut_gray_green_v4_updated";
     private static final int REQUEST_POST_NOTIFICATIONS = 1201;
 
     private static final int COLOR_BACKGROUND = Color.rgb(0, 0, 0);
